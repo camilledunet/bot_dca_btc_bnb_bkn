@@ -24,12 +24,14 @@ API_KEY = os.getenv("MEXC_API_KEY")
 API_SECRET = os.getenv("MEXC_API_SECRET")
 
 # Montant par coin à chaque DCA (dans la devise de cotation : USDC ou USDT)
-MONTANT_PAR_COIN = 1.16   # 1,16$ par crypto
+# ATTENTION : Le minimum sur MEXC est souvent de 5 USDT. 
+# Si 1.16 ne passe pas, essaie 5.1 ou plus.
+MONTANT_PAR_COIN = 1.16   
 
 # Paires spot :
 # - BTC côté en USDC
-# - BNB & BKN côté en USDT
-PAIRS = ["BTCUSDC", "BNBUSDT"]
+# - HYPE côté en USDT
+PAIRS = ["BTCUSDC", "HYPEUSDT"]
 
 
 
@@ -51,16 +53,6 @@ def create_signature(query_string: str, secret: str) -> str:
 def mexc_request(method: str, path: str, params: dict = None, is_signed: bool = False):
     """
     Envoie une requête à l'API MEXC (Spot v3).
-
-    - method : "GET", "POST", ...
-    - path   : ex "/api/v3/order"
-    - params : dict de paramètres (symbol, side, type, ...)
-    - is_signed : True pour les endpoints qui nécessitent une signature (account, order, ...)
-
-    Pour les endpoints SIGNED :
-    - on met TOUT dans la query string : symbol=...&side=...&...&timestamp=...&recvWindow=...
-    - on calcule la signature sur CETTE chaîne
-    - on ajoute &signature=... à la fin de l'URL
     """
     if params is None:
         params = {}
