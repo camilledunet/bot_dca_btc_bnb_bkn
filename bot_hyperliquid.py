@@ -12,7 +12,7 @@ load_dotenv()
 # ================= CONFIGURATION =================
 # C'est ici que tu peux changer le montant !
 # Mets au moins 5 USDC pour être sûr.
-MONTANT_A_ACHETER_USDC = 5.0 
+MONTANT_A_ACHETER_USDC = 12.0
 NOM_CRYPTO = "HYPE"
 # =================================================
 
