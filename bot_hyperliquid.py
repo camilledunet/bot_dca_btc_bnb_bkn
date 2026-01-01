@@ -9,18 +9,18 @@ from eth_account.account import Account
 load_dotenv()
 
 # ================= CONFIGURATION =================
-# On tente avec 20 USDC pour être large (tu as 27 dispo)
+# On garde 20 USDC pour être large
 MONTANT_A_ACHETER_USDC = 20.0 
 NOM_CRYPTO = "HYPE"
 # =================================================
 
 def run_bot():
-    print(f"--- 🔍 Démarrage du Robot Diagnostic pour {NOM_CRYPTO} ---")
+    print(f"--- 🔧 Démarrage Robot HYPE (Correction Précision) ---")
 
     private_key = os.getenv("PRIVATE_KEY")
     public_address = os.getenv("PUBLIC_ADDRESS")
 
-    if not private_key or not public_address:
+    if not private_key:
         print("❌ ERREUR : Clés manquantes.")
         return
 
@@ -33,29 +33,31 @@ def run_bot():
 
         # Vérif Solde
         user_state = info.spot_user_state(public_address)
-        balances = user_state.get("balances", [])
         mon_solde_usdc = 0.0
-        for b in balances:
+        for b in user_state.get("balances", []):
             if b["coin"] == "USDC":
                 mon_solde_usdc = float(b["total"])
         
         print(f"💰 Ton solde : {mon_solde_usdc} USDC")
 
         if mon_solde_usdc < MONTANT_A_ACHETER_USDC:
-            print(f"❌ Pas assez d'argent ! Tu as {mon_solde_usdc}, il faut {MONTANT_A_ACHETER_USDC}.")
+            print(f"❌ Pas assez d'argent (Min {MONTANT_A_ACHETER_USDC}).")
             return
 
         # Prix
         all_mids = info.all_mids()
-        prix_actuel = float(all_mids.get(NOM_CRYPTO, 25.0)) # Prix par défaut 25 si introuvable
-        print(f"🏷️ Prix du HYPE estimé : {prix_actuel} $")
-
-        # Calcul Quantité
-        prix_limite = prix_actuel * 1.05 # +5% pour être sûr
-        # On arrondit à 2 chiffres (ex: 0.45)
-        quantite = round(MONTANT_A_ACHETER_USDC / prix_limite, 2)
+        prix_actuel = float(all_mids.get(NOM_CRYPTO, 25.0))
         
-        print(f"🛒 Tentative d'achat de {quantite} {NOM_CRYPTO} (Prix max: {round(prix_limite, 2)} $)")
+        # --- C'EST ICI QUE CA CHANGE ---
+        # Le marché veut souvent 3 ou 4 décimales pour le prix du HYPE.
+        # On tente avec 4 décimales pour être sûr d'être précis (le système coupera si trop long).
+        # On arrondit la quantité à 2 décimales.
+        
+        prix_limite = round(prix_actuel * 1.05, 4)  # 4 chiffres après la virgule (Ex: 26.1234)
+        quantite = round(MONTANT_A_ACHETER_USDC / prix_limite, 2) # 2 chiffres pour la quantité (Ex: 0.75)
+
+        print(f"🏷️ Prix actuel : {prix_actuel}")
+        print(f"🛒 Commande : Acheter {quantite} {NOM_CRYPTO} à max {prix_limite} $")
 
         # Ordre
         result = exchange.order(
@@ -66,21 +68,16 @@ def run_bot():
             order_type={"limit": {"tif": "Ioc"}}
         )
 
-        # ANALYSE DU RÉSULTAT (La partie importante !)
+        # Analyse
         status_type = result["response"]["type"]
-        
         if status_type == "order":
-            # On regarde ce qu'il y a DANS la réponse
             status_detail = result["response"]["data"]["statuses"][0]
-            
             if "filled" in status_detail:
-                print(f"🎉 VRAIE VICTOIRE ! Ordre rempli complet : {status_detail}")
+                print(f"🎉 VICTOIRE ! Achat confirmé : {status_detail}")
             else:
-                # Si c'est "canceled" ou autre chose
-                print(f"⚠️ PROBLÈME : L'ordre a été envoyé mais rejeté par Hyperliquid.")
-                print(f"👉 Raison du rejet : {status_detail}")
+                print(f"⚠️ Rejeté : {status_detail}")
         else:
-            print(f"❌ Erreur technique bizarre : {result}")
+            print(f"❌ Erreur : {result}")
 
     except Exception as e:
         print(f"💥 Crash : {e}")
