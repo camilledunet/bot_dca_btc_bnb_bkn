@@ -9,13 +9,12 @@ from eth_account.account import Account
 load_dotenv()
 
 # ================= CONFIGURATION =================
-# On garde 20 USDC pour être large
 MONTANT_A_ACHETER_USDC = 20.0 
 NOM_CRYPTO = "HYPE"
 # =================================================
 
 def run_bot():
-    print(f"--- 🔧 Démarrage Robot HYPE (Correction Précision) ---")
+    print(f"--- 🎯 Démarrage Robot HYPE (Correction 3 Décimales) ---")
 
     private_key = os.getenv("PRIVATE_KEY")
     public_address = os.getenv("PUBLIC_ADDRESS")
@@ -48,13 +47,12 @@ def run_bot():
         all_mids = info.all_mids()
         prix_actuel = float(all_mids.get(NOM_CRYPTO, 25.0))
         
-        # --- C'EST ICI QUE CA CHANGE ---
-        # Le marché veut souvent 3 ou 4 décimales pour le prix du HYPE.
-        # On tente avec 4 décimales pour être sûr d'être précis (le système coupera si trop long).
-        # On arrondit la quantité à 2 décimales.
+        # --- CORRECTION ICI ---
+        # On arrondit le PRIX à 3 décimales (ex: 26.737) car le marché HYPE n'accepte pas 4.
+        prix_limite = round(prix_actuel * 1.05, 3) 
         
-        prix_limite = round(prix_actuel * 1.05, 4)  # 4 chiffres après la virgule (Ex: 26.1234)
-        quantite = round(MONTANT_A_ACHETER_USDC / prix_limite, 2) # 2 chiffres pour la quantité (Ex: 0.75)
+        # On arrondit la QUANTITE à 2 décimales (ex: 0.75)
+        quantite = round(MONTANT_A_ACHETER_USDC / prix_limite, 2)
 
         print(f"🏷️ Prix actuel : {prix_actuel}")
         print(f"🛒 Commande : Acheter {quantite} {NOM_CRYPTO} à max {prix_limite} $")
